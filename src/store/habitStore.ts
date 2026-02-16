@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { v4 as uuidv4 } from 'uuid';
 import { Habit, HabitLog } from '../types';
 import { getToday, formatDate } from '../utils/date';
+import { handleHabitCompletion } from '../utils/gamification';
 
 interface HabitState {
   habits: Habit[];
@@ -59,6 +60,9 @@ export const useHabitStore = create<HabitState>()(
           (l) => l.habitId === habitId && l.date === date
         );
 
+        const wasCompleted = existing?.completed ?? false;
+        const willBeCompleted = !wasCompleted;
+
         if (existing) {
           set((state) => ({
             logs: state.logs.map((l) =>
@@ -75,6 +79,18 @@ export const useHabitStore = create<HabitState>()(
             ],
           }));
         }
+
+        // Trigger gamification after state update
+        setTimeout(() => {
+          const newState = get();
+          handleHabitCompletion(
+            habitId,
+            date,
+            willBeCompleted,
+            newState.logs,
+            newState.getHabitsForDate
+          );
+        }, 0);
       },
 
       setHabitValue: (habitId, date, value) => {
@@ -84,6 +100,9 @@ export const useHabitStore = create<HabitState>()(
         const existing = get().logs.find(
           (l) => l.habitId === habitId && l.date === date
         );
+
+        const wasCompleted = existing?.completed ?? false;
+        const willBeCompleted = completed && !wasCompleted;
 
         if (existing) {
           set((state) => ({
@@ -97,6 +116,20 @@ export const useHabitStore = create<HabitState>()(
           set((state) => ({
             logs: [...state.logs, { habitId, date, value, completed }],
           }));
+        }
+
+        // Trigger gamification if newly completed
+        if (willBeCompleted) {
+          setTimeout(() => {
+            const newState = get();
+            handleHabitCompletion(
+              habitId,
+              date,
+              true,
+              newState.logs,
+              newState.getHabitsForDate
+            );
+          }, 0);
         }
       },
 

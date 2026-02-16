@@ -45,7 +45,7 @@ export default function CreateHabitScreen() {
   const [unit, setUnit] = useState('');
   const [frequency, setFrequency] = useState<FrequencyType>('daily');
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
-  const [selectedColor, setSelectedColor] = useState(Colors.primary);
+  const [selectedColor, setSelectedColor] = useState<string>(Colors.primary);
   const [selectedIcon, setSelectedIcon] = useState('fitness');
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderTime, setReminderTime] = useState('08:00');
@@ -60,26 +60,25 @@ export default function CreateHabitScreen() {
   const handleSubmit = () => {
     if (!name.trim()) return;
 
-    addHabit({
-      name: name.trim(),
-      type,
-      target: type === 'quantitative' ? parseFloat(target) || null : null,
-      unit: type === 'quantitative' ? unit : null,
-      frequency: {
-        type: frequency,
-        days: frequency === 'daily' ? [0, 1, 2, 3, 4, 5, 6] : selectedDays,
-      },
-      color: selectedColor,
-      icon: selectedIcon,
-      reminder: reminderEnabled
-        ? {
-            enabled: true,
-            time: reminderTime,
-          }
-        : undefined,
-      note: notes.trim() || undefined,
-      createdAt: new Date().toISOString(),
-    });
+      addHabit({
+        name: name.trim(),
+        type,
+        target: type === 'quantitative' ? parseFloat(target) || null : null,
+        unit: type === 'quantitative' ? unit : null,
+        frequency: {
+          type: frequency,
+          days: frequency === 'daily' ? [0, 1, 2, 3, 4, 5, 6] : selectedDays,
+        },
+        color: selectedColor,
+        icon: selectedIcon,
+        reminder: reminderEnabled
+          ? {
+              enabled: true,
+              time: reminderTime,
+            }
+          : undefined,
+        note: notes.trim() || undefined,
+      });
 
     router.back();
   };

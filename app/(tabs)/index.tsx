@@ -16,6 +16,7 @@ import { Colors } from '../../src/constants/colors';
 import { Spacing, FontSize, FontWeight, BorderRadius } from '../../src/constants/layout';
 import { HabitCard } from '../../src/components/habit/HabitCard';
 import { DailyProgress } from '../../src/components/dashboard/DailyProgress';
+import { LevelUpModal } from '../../src/components/gamification/LevelUpModal';
 
 export default function DashboardScreen() {
   const today = getToday();
@@ -151,6 +152,9 @@ export default function DashboardScreen() {
       >
         <Ionicons name="add" size={32} color="#FFFFFF" />
       </TouchableOpacity>
+
+      {/* Level Up Modal */}
+      <LevelUpModal />
     </SafeAreaView>
   );
 }

@@ -64,3 +64,59 @@ export interface PresetHabit {
   category: HabitCategory;
   frequency: Frequency;
 }
+
+// ========== Gamification ==========
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  requirement: BadgeRequirement;
+  unlockedAt?: string;
+}
+
+export interface BadgeRequirement {
+  type: 'streak' | 'total_completions' | 'monthly_rate';
+  value: number;
+}
+
+export interface XPEvent {
+  amount: number;
+  reason: string;
+  date: string;
+}
+
+// ========== Challenges ==========
+
+export type ChallengeStatus = 'available' | 'active' | 'completed' | 'failed';
+
+export interface Challenge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  duration: number;
+  habitConfig: {
+    name: string;
+    type: HabitType;
+    target: number | null;
+    unit: string | null;
+  };
+  category: HabitCategory;
+}
+
+export interface ActiveChallenge {
+  challengeId: string;
+  habitId: string;
+  startDate: string;
+  endDate: string;
+  status: ChallengeStatus;
+  completedDays: number;
+}
+
+// ========== Premium ==========
+
+export type PremiumPlan = 'free' | 'monthly' | 'yearly';
