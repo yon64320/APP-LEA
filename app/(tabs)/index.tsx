@@ -10,8 +10,8 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useHabitStore } from '../../src/store/habitStore';
-import { getToday, formatDateDisplay, getGreeting } from '../../src/utils/date';
-import { calculateGlobalStreak } from '../../src/utils/streak';
+import { useAppStore } from '../../src/store/appStore';
+import { getToday } from '../../src/utils/date';
 import { Colors } from '../../src/constants/colors';
 import { Spacing, FontSize, FontWeight, BorderRadius } from '../../src/constants/layout';
 import { HabitCard } from '../../src/components/habit/HabitCard';
@@ -25,6 +25,8 @@ export default function DashboardScreen() {
   const getHabitsForDate = useHabitStore((s) => s.getHabitsForDate);
   const getLogForHabitDate = useHabitStore((s) => s.getLogForHabitDate);
   const toggleHabitCompletion = useHabitStore((s) => s.toggleHabitCompletion);
+  const setHabitValue = useHabitStore((s) => s.setHabitValue);
+  const userName = useAppStore((s) => s.userName);
 
   const todayHabits = useMemo(() => getHabitsForDate(today), [habits, today]);
 
@@ -37,36 +39,6 @@ export default function DashboardScreen() {
     [todayHabits, logs, today]
   );
 
-  const globalStreak = useMemo(
-    () => calculateGlobalStreak(logs, getHabitsForDate),
-    [logs, habits]
-  );
-
-  // Simple best streak: max of globalStreak and any individual best
-  const bestStreak = useMemo(() => {
-    let best = globalStreak;
-    // Check recent consecutive days
-    let streak = 0;
-    let d = today;
-    for (let i = 0; i < 365; i++) {
-      const dayHabits = getHabitsForDate(d);
-      if (dayHabits.length === 0) {
-        d = addDaysStr(d, -1);
-        continue;
-      }
-      const allDone = dayHabits.every((h) =>
-        logs.some((l) => l.habitId === h.id && l.date === d && l.completed)
-      );
-      if (allDone) {
-        streak++;
-        best = Math.max(best, streak);
-      } else {
-        streak = 0;
-      }
-      d = addDaysStr(d, -1);
-    }
-    return best;
-  }, [logs, habits]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -78,7 +50,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.appName}>HabitFlow</Text>
-            <Text style={styles.greeting}>Bonjour, Alexandre</Text>
+            <Text style={styles.greeting}>Bonjour, {userName}</Text>
           </View>
           <TouchableOpacity
             style={styles.profileButton}
@@ -124,15 +96,29 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            todayHabits.map((habit) => (
-              <HabitCard
-                key={habit.id}
-                habit={habit}
-                log={getLogForHabitDate(habit.id, today)}
-                onToggle={() => toggleHabitCompletion(habit.id, today)}
-                onPress={() => router.push(`/habit/${habit.id}`)}
-              />
-            ))
+            todayHabits.map((habit) => {
+              const currentValue = getLogForHabitDate(habit.id, today)?.value ?? 0;
+              const step = habit.type === 'quantitative' && habit.target
+                ? Math.max(1, habit.target * 0.05)
+                : 1;
+
+              const handleAdjust = (delta: number) => {
+                const tentativeValue = Math.max(0, currentValue + (delta * step));
+                const nextValue = habit.target ? Math.min(habit.target, tentativeValue) : tentativeValue;
+                setHabitValue(habit.id, today, nextValue);
+              };
+
+              return (
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  log={getLogForHabitDate(habit.id, today)}
+                  onToggle={() => toggleHabitCompletion(habit.id, today)}
+                  onPress={() => router.push(`/habit/${habit.id}`)}
+                  onAdjust={habit.type === 'quantitative' ? handleAdjust : undefined}
+                />
+              );
+            })
           )}
         </View>
 
@@ -159,14 +145,6 @@ export default function DashboardScreen() {
   );
 }
 
-function addDaysStr(dateStr: string, days: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d + days);
-  const ny = date.getFullYear();
-  const nm = String(date.getMonth() + 1).padStart(2, '0');
-  const nd = String(date.getDate()).padStart(2, '0');
-  return `${ny}-${nm}-${nd}`;
-}
 
 const styles = StyleSheet.create({
   container: {

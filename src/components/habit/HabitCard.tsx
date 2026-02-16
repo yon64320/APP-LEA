@@ -41,28 +41,16 @@ function formatTime(time?: string | null): string {
   }
 }
 
-// Helper function to get time period label
-function getTimePeriod(time?: string | null): string {
-  if (!time) return '';
-  try {
-    const hour = parseInt(time.split(':')[0], 10);
-    if (hour >= 5 && hour < 12) return 'Matin';
-    if (hour >= 12 && hour < 18) return 'Après-midi';
-    if (hour >= 18 && hour < 22) return 'Soir';
-    return 'Nuit';
-  } catch {
-    return '';
-  }
-}
 
 interface HabitCardProps {
   habit: Habit;
   log?: HabitLog;
   onToggle: () => void;
   onPress: () => void;
+  onAdjust?: (delta: number) => void;
 }
 
-export function HabitCard({ habit, log, onToggle, onPress }: HabitCardProps) {
+export function HabitCard({ habit, log, onToggle, onPress, onAdjust }: HabitCardProps) {
   const scale = useSharedValue(1);
   const isCompleted = log?.completed ?? false;
 
@@ -78,13 +66,6 @@ export function HabitCard({ habit, log, onToggle, onPress }: HabitCardProps) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggle();
   };
-
-  const progress =
-    habit.type === 'quantitative' && habit.target
-      ? (log?.value ?? 0) / habit.target
-      : isCompleted
-        ? 1
-        : 0;
 
   return (
     <Animated.View style={animatedStyle}>
@@ -135,9 +116,23 @@ export function HabitCard({ habit, log, onToggle, onPress }: HabitCardProps) {
             </Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.moreButton}>
-          <Ionicons name="ellipsis-vertical" size={20} color="#D1D5DB" />
-        </TouchableOpacity>
+        {habit.type === 'quantitative' && onAdjust ? (
+          <View style={styles.adjustControls}>
+            <TouchableOpacity style={styles.adjustButton} onPress={() => onAdjust(-1)}>
+              <Ionicons name="remove" size={16} color={Colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.adjustValue}>
+              {Math.round(log?.value ?? 0)}{habit.unit ? ` ${habit.unit}` : ''}
+            </Text>
+            <TouchableOpacity style={styles.adjustButton} onPress={() => onAdjust(1)}>
+              <Ionicons name="add" size={16} color={Colors.primary} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.moreButton}>
+            <Ionicons name="ellipsis-vertical" size={20} color="#D1D5DB" />
+          </TouchableOpacity>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -198,6 +193,30 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     marginTop: 2,
   },
+
+  adjustControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  adjustButton: {
+    width: 28,
+    height: 28,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.primary + '40',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary + '10',
+  },
+  adjustValue: {
+    minWidth: 52,
+    textAlign: 'center',
+    color: Colors.textSecondary,
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.medium,
+  },
+
   moreButton: {
     padding: Spacing.xs,
   },

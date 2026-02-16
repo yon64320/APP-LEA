@@ -11,6 +11,8 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -47,6 +49,7 @@ export default function CreateHabitScreen() {
   const [notes, setNotes] = useState('');
   const [showIconModal, setShowIconModal] = useState(false);
   const [iconSearch, setIconSearch] = useState('');
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
     if (!editingHabit) return;
@@ -65,6 +68,17 @@ export default function CreateHabitScreen() {
     setMinute(Number.isNaN(m) ? 0 : m);
     setNotes(editingHabit.note ?? '');
   }, [editingHabit]);
+
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const allIcons = useMemo(
     () => Object.keys(Ionicons.glyphMap).filter((icon) => icon.includes(iconSearch.toLowerCase())).slice(0, 300),
@@ -118,13 +132,6 @@ export default function CreateHabitScreen() {
     router.back();
   };
 
-  const updateCounter = (typeCounter: 'hour' | 'minute', delta: number) => {
-    if (typeCounter === 'hour') {
-      setHour((prev) => (prev + delta + 24) % 24);
-      return;
-    }
-    setMinute((prev) => (prev + delta + 60) % 60);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -230,9 +237,19 @@ export default function CreateHabitScreen() {
             </View>
             {reminderEnabled && (
               <View style={styles.reminderCounterWrap}>
-                <Counter label="Heures" value={hour} onPlus={() => updateCounter('hour', 1)} onMinus={() => updateCounter('hour', -1)} />
+                <WheelPicker
+                  label="Heures"
+                  values={HOUR_VALUES}
+                  selectedValue={hour}
+                  onValueChange={setHour}
+                />
                 <Text style={styles.counterColon}>:</Text>
-                <Counter label="Minutes" value={minute} onPlus={() => updateCounter('minute', 1)} onMinus={() => updateCounter('minute', -1)} />
+                <WheelPicker
+                  label="Minutes"
+                  values={MINUTE_VALUES}
+                  selectedValue={minute}
+                  onValueChange={setMinute}
+                />
               </View>
             )}
           </View>
@@ -249,11 +266,16 @@ export default function CreateHabitScreen() {
               numberOfLines={4}
               textAlignVertical="top"
             />
-            <TouchableOpacity onPress={Keyboard.dismiss} style={styles.doneKeyboardButton}>
-              <Text style={styles.doneKeyboardText}>Done</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
+
+        {isKeyboardVisible && (
+          <View style={styles.keyboardToolbar}>
+            <TouchableOpacity onPress={Keyboard.dismiss} style={styles.keyboardDoneButton}>
+              <Text style={styles.keyboardDoneText}>Terminer</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.bottomBar}>
           <TouchableOpacity style={[styles.submitButton, !name.trim() && { opacity: 0.6 }]} onPress={handleSubmit} disabled={!name.trim()}>
@@ -292,20 +314,46 @@ export default function CreateHabitScreen() {
   );
 }
 
-function Counter({ label, value, onPlus, onMinus }: { label: string; value: number; onPlus: () => void; onMinus: () => void }) {
+const HOUR_VALUES = Array.from({ length: 24 }, (_, i) => i);
+const MINUTE_VALUES = Array.from({ length: 60 }, (_, i) => i);
+const ITEM_HEIGHT = 40;
+
+function WheelPicker({
+  label,
+  values,
+  selectedValue,
+  onValueChange,
+}: {
+  label: string;
+  values: number[];
+  selectedValue: number;
+  onValueChange: (value: number) => void;
+}) {
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(event.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+    const next = values[Math.max(0, Math.min(values.length - 1, index))];
+    onValueChange(next);
+  };
+
   return (
-    <View style={styles.counterCard}>
+    <View style={styles.wheelCard}>
       <Text style={styles.goalLabel}>{label}</Text>
-      <TouchableOpacity onPress={onPlus} style={styles.counterButton}>
-        <Ionicons name="chevron-up" size={18} color={Colors.primary} />
-      </TouchableOpacity>
-      <Text style={styles.counterValue}>{String(value).padStart(2, '0')}</Text>
-      <TouchableOpacity onPress={onMinus} style={styles.counterButton}>
-        <Ionicons name="chevron-down" size={18} color={Colors.primary} />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={Keyboard.dismiss} style={styles.doneKeyboardButton}>
-        <Text style={styles.doneKeyboardText}>Done</Text>
-      </TouchableOpacity>
+      <ScrollView
+        style={styles.wheelScroll}
+        contentContainerStyle={styles.wheelContent}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={ITEM_HEIGHT}
+        decelerationRate="fast"
+        onMomentumScrollEnd={handleScroll}
+      >
+        {values.map((value) => (
+          <TouchableOpacity key={`${label}-${value}`} style={styles.wheelItem} onPress={() => onValueChange(value)}>
+            <Text style={[styles.wheelItemText, value === selectedValue && styles.wheelItemTextActive]}>
+              {String(value).padStart(2, '0')}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -358,13 +406,38 @@ const styles = StyleSheet.create({
   iconButtonActive: { backgroundColor: 'rgba(128, 0, 0, 0.1)', borderWidth: 1, borderColor: Colors.primary },
   reminderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   reminderCounterWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
-  counterCard: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(128, 0, 0, 0.1)', padding: Spacing.sm, alignItems: 'center', minWidth: 110 },
-  counterButton: { padding: 2 },
-  counterValue: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.text, marginVertical: 4 },
   counterColon: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.primary },
-  doneKeyboardButton: { marginTop: Spacing.xs, alignSelf: 'flex-end', backgroundColor: Colors.primary + '15', paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: BorderRadius.full },
-  doneKeyboardText: { color: Colors.primary, fontWeight: FontWeight.semibold, fontSize: FontSize.sm },
+  wheelCard: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(128, 0, 0, 0.1)', alignItems: 'center', minWidth: 120, maxHeight: 180, paddingVertical: Spacing.xs },
+  wheelScroll: { width: '100%' },
+  wheelContent: { paddingHorizontal: Spacing.md },
+  wheelItem: { height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  wheelItemText: { fontSize: FontSize.lg, color: Colors.textSecondary },
+  wheelItemTextActive: { color: Colors.primary, fontWeight: FontWeight.bold },
   notesInput: { width: '100%', minHeight: 90, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(128, 0, 0, 0.1)', backgroundColor: '#FFFFFF', padding: Spacing.md, fontSize: FontSize.md, color: Colors.text },
+  keyboardToolbar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 94,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderColor: 'rgba(128, 0, 0, 0.1)',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    alignItems: 'flex-end',
+    zIndex: 20,
+  },
+  keyboardDoneButton: {
+    backgroundColor: Colors.primary + '15',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+  },
+  keyboardDoneText: {
+    color: Colors.primary,
+    fontWeight: FontWeight.semibold,
+    fontSize: FontSize.sm,
+  },
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: Spacing.xl, backgroundColor: 'rgba(252, 248, 245, 0.95)', borderTopWidth: 1, borderTopColor: 'rgba(128, 0, 0, 0.1)' },
   submitButton: { width: '100%', height: 58, backgroundColor: Colors.primary, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
   submitButtonText: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: '#FFFFFF' },
