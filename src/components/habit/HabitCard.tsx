@@ -17,7 +17,43 @@ import Animated, {
 import { Habit, HabitLog } from '../../types';
 import { Colors } from '../../constants/colors';
 import { BorderRadius, Spacing, FontSize, FontWeight } from '../../constants/layout';
-import { ProgressBar } from '../ui/ProgressBar';
+import { CATEGORIES } from '../../constants/presets';
+
+// Helper function to get category label
+function getCategoryLabel(category?: string): string {
+  if (!category) return 'Général';
+  const cat = CATEGORIES.find((c) => c.key === category);
+  return cat?.label || category;
+}
+
+// Helper function to format time
+function formatTime(time?: string | null): string {
+  if (!time) return 'Aucune heure';
+  try {
+    // Format: "HH:mm" -> "HH:MM"
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const min = minutes || '00';
+    // Format simple HH:MM
+    return `${String(hour).padStart(2, '0')}:${min}`;
+  } catch {
+    return time;
+  }
+}
+
+// Helper function to get time period label
+function getTimePeriod(time?: string | null): string {
+  if (!time) return '';
+  try {
+    const hour = parseInt(time.split(':')[0], 10);
+    if (hour >= 5 && hour < 12) return 'Matin';
+    if (hour >= 12 && hour < 18) return 'Après-midi';
+    if (hour >= 18 && hour < 22) return 'Soir';
+    return 'Nuit';
+  } catch {
+    return '';
+  }
+}
 
 interface HabitCardProps {
   habit: Habit;
@@ -65,24 +101,24 @@ export function HabitCard({ habit, log, onToggle, onPress }: HabitCardProps) {
             style={[
               styles.checkbox,
               isCompleted
-                ? { backgroundColor: habit.color, borderColor: habit.color }
-                : { borderColor: Colors.textMuted },
+                ? { backgroundColor: Colors.primary, borderColor: Colors.primary }
+                : { borderColor: 'rgba(128, 0, 0, 0.3)' }, // border-primary/30
             ]}
             onPress={handleToggle}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             {isCompleted && (
-              <Ionicons name="checkmark" size={16} color="#fff" />
+              <Ionicons name="checkmark" size={18} color="#fff" />
             )}
           </TouchableOpacity>
 
-          <View style={styles.info}>
+          <View style={styles.infoContainer}>
             <View style={styles.nameRow}>
               <Ionicons
                 name={habit.icon as keyof typeof Ionicons.glyphMap}
                 size={18}
-                color={habit.color}
-                style={styles.icon}
+                color={Colors.primary}
+                style={styles.habitIcon}
               />
               <Text
                 style={[
@@ -94,21 +130,14 @@ export function HabitCard({ habit, log, onToggle, onPress }: HabitCardProps) {
                 {habit.name}
               </Text>
             </View>
-
-            {habit.type === 'quantitative' && habit.target && (
-              <View style={styles.quantRow}>
-                <ProgressBar
-                  progress={progress}
-                  color={habit.color}
-                  height={4}
-                />
-                <Text style={styles.quantLabel}>
-                  {log?.value ?? 0}/{habit.target} {habit.unit}
-                </Text>
-              </View>
-            )}
+            <Text style={styles.timeText}>
+              {getCategoryLabel(habit.category)} • {habit.reminder?.time ? formatTime(habit.reminder.time) : 'Aucune heure'}
+            </Text>
           </View>
         </View>
+        <TouchableOpacity style={styles.moreButton}>
+          <Ionicons name="ellipsis-vertical" size={20} color="#D1D5DB" />
+        </TouchableOpacity>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -116,34 +145,42 @@ export function HabitCard({ habit, log, onToggle, onPress }: HabitCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+    backgroundColor: '#FFFFFF', // bg-white
+    borderRadius: 8, // rounded-lg
+    padding: Spacing.md, // p-4
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
-    marginBottom: Spacing.sm,
+    borderColor: 'rgba(128, 0, 0, 0.05)', // border-primary/5
+    marginBottom: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: BorderRadius.sm,
+    width: 24, // size-6
+    height: 24,
+    borderRadius: 4, // rounded (pas full)
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: Spacing.md,
+    marginRight: Spacing.md, // gap-4
   },
   info: {
     flex: 1,
+  },
+  infoContainer: {
+    flex: 1,
+    marginLeft: Spacing.md,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  icon: {
+  habitIcon: {
     marginRight: Spacing.sm,
   },
   name: {
@@ -153,14 +190,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   nameCompleted: {
-    opacity: 0.6,
+    textDecorationLine: 'line-through',
+    opacity: 0.5,
   },
-  quantRow: {
-    marginTop: Spacing.sm,
-  },
-  quantLabel: {
-    color: Colors.textSecondary,
+  timeText: {
+    color: 'rgba(29, 12, 12, 0.4)', // text-gray-400 ou text-primary/60
     fontSize: FontSize.xs,
-    marginTop: 4,
+    marginTop: 2,
+  },
+  moreButton: {
+    padding: Spacing.xs,
   },
 });

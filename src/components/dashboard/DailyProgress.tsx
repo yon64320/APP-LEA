@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../../constants/colors';
 import { Spacing, FontSize, FontWeight, BorderRadius } from '../../constants/layout';
-import { ProgressBar } from '../ui/ProgressBar';
+import { ProgressRing } from '../ui/ProgressRing';
 
 interface DailyProgressProps {
   completed: number;
@@ -15,55 +15,56 @@ export function DailyProgress({ completed, total }: DailyProgressProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Progression du jour</Text>
-        <Text style={styles.percentage}>{percentage}%</Text>
+      <View style={styles.content}>
+        <ProgressRing progress={rate} size={96} showPercentage={true} />
+        <View style={styles.textSection}>
+          <Text style={styles.label}>AUJOURD'HUI</Text>
+          <Text style={styles.percentage}>{percentage}% COMPLÉTÉ</Text>
+          <Text style={styles.subtitle}>
+            Objectif atteint à {completed} sur {total}
+          </Text>
+        </View>
       </View>
-      <ProgressBar
-        progress={rate}
-        color={
-          percentage === 100
-            ? Colors.success
-            : percentage >= 50
-              ? Colors.accent
-              : Colors.primary
-        }
-        height={10}
-      />
-      <Text style={styles.subtitle}>
-        {completed}/{total} habitude{total > 1 ? 's' : ''} complétée{completed > 1 ? 's' : ''}
-      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF', // bg-white
+    borderRadius: 12, // rounded-xl
+    padding: Spacing.xl, // p-6
+    marginTop: Spacing.md,
     marginBottom: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 2,
   },
-  title: {
-    color: Colors.text,
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xl, // gap-6
+  },
+  textSection: {
+    flex: 1,
+    gap: 4, // gap-1
+  },
+  label: {
+    color: 'rgba(128, 0, 0, 0.6)', // text-primary/60
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+    letterSpacing: 2, // uppercase tracking-widest
+    textTransform: 'uppercase',
   },
   percentage: {
-    color: Colors.primaryLight,
+    color: Colors.text, // text-[#1d0c0c]
     fontSize: FontSize.xl,
     fontWeight: FontWeight.bold,
   },
   subtitle: {
-    color: Colors.textSecondary,
+    color: '#666666', // text-gray-500
     fontSize: FontSize.sm,
-    marginTop: Spacing.sm,
   },
 });

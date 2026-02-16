@@ -1,14 +1,16 @@
 export const Colors = {
-  // Backgrounds
-  background: '#0F0F1A',
-  surface: '#1A1A2E',
-  surfaceLight: '#16213E',
-  surfaceBorder: '#2A2A4A',
+  // Backgrounds - Exactement comme dans le HTML
+  background: '#f8f5f5', // background-light du HTML
+  backgroundOnboarding: '#fcf8f8', // background-light du onboarding
+  backgroundGradient: '#f8f5f5', // Pas de gradient, même couleur
+  surface: '#FFFFFF', // Cartes blanches sur fond beige
+  surfaceLight: '#FFFFFF',
+  surfaceBorder: 'rgba(128, 0, 0, 0.1)', // primary/10
 
-  // Primary
-  primary: '#7C3AED',
-  primaryLight: '#8B5CF6',
-  primaryDark: '#6D28D9',
+  // Primary - Exactement #800000 du HTML
+  primary: '#800000', // Rouge foncé/marron exact
+  primaryLight: '#A00000',
+  primaryDark: '#600000',
 
   // Accent
   accent: '#3B82F6',
@@ -27,10 +29,12 @@ export const Colors = {
   error: '#EF4444',
   errorLight: '#F87171',
 
-  // Text
-  text: '#FFFFFF',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
+  // Text - Exactement comme dans le HTML
+  text: '#1d0c0c', // Texte principal très foncé (presque noir)
+  textSecondary: 'rgba(29, 12, 12, 0.7)', // text/70
+  textMuted: 'rgba(29, 12, 12, 0.5)', // text/50
+  textOnDark: '#FFFFFF', // Texte blanc sur cartes sombres
+  textSecondaryOnDark: '#B8B8B8', // Texte gris sur cartes sombres
 
   // Streak colors
   streakFire: '#F97316',
