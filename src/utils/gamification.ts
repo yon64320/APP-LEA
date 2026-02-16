@@ -97,7 +97,7 @@ export function updateChallenges(
       );
 
       // Check if challenge is completed
-      const challenge = CHALLENGES.find((c) => c.id === activeChallenge.challengeId);
+      const challenge = challengeStore.getChallengeById(activeChallenge.challengeId);
       if (challenge && completedDays >= challenge.duration) {
         challengeStore.completeChallenge(activeChallenge.challengeId);
         // Bonus XP for completing challenge
@@ -108,7 +108,6 @@ export function updateChallenges(
   }
 }
 
-import { CHALLENGES } from '../constants/challenges';
 
 /**
  * Handle gamification when a habit is completed

@@ -100,9 +100,14 @@ export default function HabitDetailScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleDelete}>
-          <Ionicons name="trash-outline" size={24} color={Colors.error} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => router.push(`/habit/create?editId=${habit.id}`)}>
+            <Ionicons name="create-outline" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleDelete}>
+            <Ionicons name="trash-outline" size={24} color={Colors.error} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -255,6 +260,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
   },
   scrollContent: {
     padding: Spacing.lg,

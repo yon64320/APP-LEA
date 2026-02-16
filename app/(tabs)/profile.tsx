@@ -70,6 +70,20 @@ export default function ProfileScreen() {
     return unlocked || { ...def, unlockedAt: undefined };
   });
 
+  const getBadgeRequirementLabel = (badgeId: string) => {
+    const badgeDef = BADGE_DEFINITIONS.find((b) => b.id === badgeId);
+    if (!badgeDef) return 'Condition inconnue';
+
+    const { requirement } = badgeDef;
+    if (requirement.type === 'streak') {
+      return `Atteindre une série de ${requirement.value} jours consécutifs.`;
+    }
+    if (requirement.type === 'total_completions') {
+      return `Compléter ${requirement.value} habitudes au total.`;
+    }
+    return `Maintenir un taux de réussite mensuel de ${Math.round(requirement.value * 100)}%.`;
+  };
+
   const handleDeleteAllData = () => {
     Alert.alert(
       'Supprimer toutes les données',
@@ -142,7 +156,17 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Badges</Text>
           <View style={styles.badgesGrid}>
             {allBadges.map((badge) => (
-              <BadgeCard key={badge.id} badge={badge} size="medium" />
+              <BadgeCard
+                key={badge.id}
+                badge={badge}
+                size="medium"
+                onPress={() => {
+                  Alert.alert(
+                    badge.name,
+                    `${badge.description}\n\n${getBadgeRequirementLabel(badge.id)}`
+                  );
+                }}
+              />
             ))}
           </View>
         </View>
@@ -165,18 +189,14 @@ export default function ProfileScreen() {
               iconColor={Colors.accent}
               label="Notifications"
               subtitle="Gérer les rappels"
-              onPress={() => {
-                // TODO: Navigate to notifications settings
-              }}
+              onPress={() => router.push('/notifications')}
             />
             <SettingItem
               icon="list"
               iconColor={Colors.primary}
               label="Mes habitudes"
               subtitle={`${habits.length} habitude${habits.length > 1 ? 's' : ''}`}
-              onPress={() => {
-                // TODO: Navigate to habits list
-              }}
+              onPress={() => router.push('/habits')}
             />
             <SettingItem
               icon="refresh"

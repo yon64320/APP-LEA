@@ -11,7 +11,7 @@ interface HabitState {
   logs: HabitLog[];
 
   // Actions
-  addHabit: (habit: Omit<Habit, 'id' | 'createdAt'>) => void;
+  addHabit: (habit: Omit<Habit, 'id' | 'createdAt'>) => string;
   updateHabit: (id: string, updates: Partial<Habit>) => void;
   deleteHabit: (id: string) => void;
   toggleHabitCompletion: (habitId: string, date: string) => void;
@@ -38,6 +38,7 @@ export const useHabitStore = create<HabitState>()(
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ habits: [...state.habits, habit] }));
+        return habit.id;
       },
 
       updateHabit: (id, updates) => {
