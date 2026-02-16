@@ -101,7 +101,7 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Habitudes du jour</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/habits')}>
               <Text style={styles.seeAllLink}>
                 Tout voir <Ionicons name="arrow-forward" size={14} color={Colors.primary} />
               </Text>
