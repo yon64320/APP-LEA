@@ -34,37 +34,68 @@ export default function HistoryScreen() {
     [year, month, habits, logs, selectedHabit]
   );
 
-  const globalStreak = useMemo(
-    () => calculateGlobalStreak(logs, getHabitsForDate),
-    [logs, habits]
-  );
+  const streakData = useMemo(() => {
+    if (!selectedHabit) {
+      const current = calculateGlobalStreak(logs, getHabitsForDate);
+      let best = current;
+      let streak = 0;
+      const today = new Date();
 
-  // Calculate best streak
-  const bestStreak = useMemo(() => {
-    let best = globalStreak;
-    let streak = 0;
+      for (let i = 0; i < 365; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayHabits = getHabitsForDate(dateStr);
+
+        if (dayHabits.length === 0) {
+          streak = 0;
+          continue;
+        }
+
+        const allDone = dayHabits.every((h) =>
+          logs.some((l) => l.habitId === h.id && l.date === dateStr && l.completed)
+        );
+
+        if (allDone) {
+          streak++;
+          best = Math.max(best, streak);
+        } else {
+          streak = 0;
+        }
+      }
+
+      return { current, best };
+    }
+
+    let current = 0;
+    let best = 0;
+    let running = 0;
     const today = new Date();
+
     for (let i = 0; i < 365; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      const dayHabits = getHabitsForDate(dateStr);
-      if (dayHabits.length === 0) {
-        streak = 0;
-        continue;
-      }
-      const allDone = dayHabits.every((h) =>
-        logs.some((l) => l.habitId === h.id && l.date === dateStr && l.completed)
+      const isCompleted = logs.some(
+        (l) => l.habitId === selectedHabit && l.date === dateStr && l.completed
       );
-      if (allDone) {
-        streak++;
-        best = Math.max(best, streak);
+
+      if (isCompleted) {
+        running += 1;
+        if (i === current) {
+          current += 1;
+        }
       } else {
-        streak = 0;
+        if (i === current) {
+          current = running;
+        }
+        running = 0;
       }
+      best = Math.max(best, running);
     }
-    return best;
-  }, [logs, habits]);
+
+    return { current, best: Math.max(best, current) };
+  }, [logs, habits, selectedHabit, getHabitsForDate]);
 
   const monthlyRate = useMemo(() => {
     const withHabits = completions.filter((c) => c.total > 0);
@@ -74,8 +105,8 @@ export default function HistoryScreen() {
   }, [completions]);
 
   const totalCompleted = useMemo(
-    () => logs.filter((l) => l.completed).length,
-    [logs]
+    () => logs.filter((l) => l.completed && (!selectedHabit || l.habitId === selectedHabit)).length,
+    [logs, selectedHabit]
   );
 
   // Get recent activities
@@ -287,14 +318,14 @@ export default function HistoryScreen() {
             <View style={styles.streakContent}>
               <Text style={styles.streakLabel}>Série Actuelle vs Meilleure</Text>
               <View style={styles.streakNumbers}>
-                <Text style={styles.streakValue}>{globalStreak} j</Text>
-                <Text style={styles.streakRecord}>/ {bestStreak} j record</Text>
+                <Text style={styles.streakValue}>{streakData.current} j</Text>
+                <Text style={styles.streakRecord}>/ {streakData.best} j record</Text>
               </View>
               <View style={styles.streakProgressBar}>
                 <View
                   style={[
                     styles.streakProgressFill,
-                    { width: `${bestStreak > 0 ? (globalStreak / bestStreak) * 100 : 0}%` },
+                    { width: `${streakData.best > 0 ? (streakData.current / streakData.best) * 100 : 0}%` },
                   ]}
                 />
               </View>

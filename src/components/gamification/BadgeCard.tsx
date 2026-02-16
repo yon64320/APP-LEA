@@ -35,20 +35,20 @@ export function BadgeCard({ badge, onPress, size = 'medium' }: BadgeCardProps) {
             width: dimensions.container - 16,
             height: dimensions.container - 16,
             backgroundColor: isUnlocked
-              ? badge.color + '20'
+              ? 'rgba(20, 20, 20, 0.92)'
               : 'rgba(128, 0, 0, 0.05)',
-            borderColor: isUnlocked ? badge.color : 'rgba(128, 0, 0, 0.2)',
+            borderColor: isUnlocked ? 'rgba(20, 20, 20, 0.98)' : 'rgba(128, 0, 0, 0.2)',
           },
         ]}
       >
         <Ionicons
           name={badge.icon as keyof typeof Ionicons.glyphMap}
           size={dimensions.icon}
-          color={isUnlocked ? badge.color : 'rgba(128, 0, 0, 0.3)'}
+          color={isUnlocked ? '#FFFFFF' : 'rgba(128, 0, 0, 0.3)'}
         />
         {isUnlocked && (
           <View style={styles.checkmark}>
-            <Ionicons name="checkmark-circle" size={16} color={badge.color} />
+            <Ionicons name="checkmark-circle" size={16} color={Colors.primary} />
           </View>
         )}
       </View>

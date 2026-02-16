@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -61,9 +63,13 @@ export default function ProfileScreen() {
   const totalXP = useGamificationStore((s) => s.totalXP);
   const unlockedBadges = useGamificationStore((s) => s.unlockedBadges);
   const isPremium = usePremiumStore((s) => s.isPremium());
-  const plan = usePremiumStore((s) => s.plan);
   const habits = useHabitStore((s) => s.habits);
   const resetOnboarding = useAppStore((s) => s.resetOnboarding);
+  const userName = useAppStore((s) => s.userName);
+  const setUserName = useAppStore((s) => s.setUserName);
+
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [draftName, setDraftName] = useState(userName);
 
   const allBadges = BADGE_DEFINITIONS.map((def) => {
     const unlocked = unlockedBadges.find((b) => b.id === def.id);
@@ -117,11 +123,17 @@ export default function ProfileScreen() {
             <View style={styles.avatar}>
               <Ionicons name="person" size={40} color={Colors.primary} />
             </View>
-            <TouchableOpacity style={styles.editAvatarButton}>
+            <TouchableOpacity
+              style={styles.editAvatarButton}
+              onPress={() => {
+                setDraftName(userName);
+                setShowEditProfile(true);
+              }}
+            >
               <Ionicons name="pencil" size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.userName}>Alexandre</Text>
+          <Text style={styles.userName}>{userName}</Text>
           {isPremium && (
             <View style={styles.premiumBadge}>
               <Ionicons name="star" size={16} color={Colors.streakGold} />
@@ -163,7 +175,7 @@ export default function ProfileScreen() {
                 onPress={() => {
                   Alert.alert(
                     badge.name,
-                    `${badge.description}\n\n${getBadgeRequirementLabel(badge.id)}`
+                    `${badge.description}\n\nCondition : ${getBadgeRequirementLabel(badge.id)}\n\nÉtat : ${badge.unlockedAt ? 'Badge obtenu 🎉' : 'Badge verrouillé'}`
                   );
                 }}
               />
@@ -274,6 +286,52 @@ export default function ProfileScreen() {
           <Text style={styles.copyright}>HABITFLOW © 2024</Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showEditProfile}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEditProfile(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.editModalCard}>
+            <Text style={styles.editModalTitle}>Modifier le profil</Text>
+            <TextInput
+              style={styles.editNameInput}
+              value={draftName}
+              onChangeText={setDraftName}
+              placeholder="Votre prénom"
+              placeholderTextColor={Colors.textMuted}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                if (draftName.trim()) {
+                  setUserName(draftName.trim());
+                  setShowEditProfile(false);
+                }
+              }}
+            />
+            <View style={styles.editModalActions}>
+              <TouchableOpacity
+                style={[styles.editModalButton, styles.editModalCancel]}
+                onPress={() => setShowEditProfile(false)}
+              >
+                <Text style={styles.editModalCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.editModalButton, styles.editModalSave]}
+                onPress={() => {
+                  if (!draftName.trim()) return;
+                  setUserName(draftName.trim());
+                  setShowEditProfile(false);
+                }}
+              >
+                <Text style={styles.editModalSaveText}>Enregistrer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -422,6 +480,58 @@ const styles = StyleSheet.create({
   settingSubtitle: {
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    justifyContent: 'center',
+    padding: Spacing.xl,
+  },
+  editModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(128, 0, 0, 0.1)',
+    gap: Spacing.md,
+  },
+  editModalTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: Colors.text,
+  },
+  editNameInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(128, 0, 0, 0.2)',
+    borderRadius: 12,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  editModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: Spacing.sm,
+  },
+  editModalButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 10,
+  },
+  editModalCancel: {
+    backgroundColor: Colors.surfaceLight,
+  },
+  editModalSave: {
+    backgroundColor: Colors.primary,
+  },
+  editModalCancelText: {
+    color: Colors.textSecondary,
+    fontWeight: FontWeight.medium,
+  },
+  editModalSaveText: {
+    color: '#FFFFFF',
+    fontWeight: FontWeight.semibold,
   },
   branding: {
     alignItems: 'center',
