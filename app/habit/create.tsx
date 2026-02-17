@@ -22,6 +22,8 @@ import { HabitType, FrequencyType } from '../../src/types';
 import { Colors } from '../../src/constants/colors';
 import { Spacing, FontSize, FontWeight, BorderRadius } from '../../src/constants/layout';
 import { HABIT_ICONS } from '../../src/constants/presets';
+import { useKeyboardToolbar } from '../../src/hooks/useKeyboardToolbar';
+import { KeyboardToolbar } from '../../src/components/ui/KeyboardToolbar';
 
 const HABIT_COLORS = [Colors.primary, '#F97316', '#10B981', '#3B82F6', '#EC4899', '#EAB308'];
 const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
@@ -49,7 +51,7 @@ export default function CreateHabitScreen() {
   const [notes, setNotes] = useState('');
   const [showIconModal, setShowIconModal] = useState(false);
   const [iconSearch, setIconSearch] = useState('');
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const { isKeyboardVisible } = useKeyboardToolbar();
 
   useEffect(() => {
     if (!editingHabit) return;
@@ -68,17 +70,6 @@ export default function CreateHabitScreen() {
     setMinute(Number.isNaN(m) ? 0 : m);
     setNotes(editingHabit.note ?? '');
   }, [editingHabit]);
-
-
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardVisible(true));
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
 
   const allIcons = useMemo(
     () => Object.keys(Ionicons.glyphMap).filter((icon) => icon.includes(iconSearch.toLowerCase())).slice(0, 300),
@@ -269,13 +260,7 @@ export default function CreateHabitScreen() {
           </View>
         </ScrollView>
 
-        {isKeyboardVisible && (
-          <View style={styles.keyboardToolbar}>
-            <TouchableOpacity onPress={Keyboard.dismiss} style={styles.keyboardDoneButton}>
-              <Text style={styles.keyboardDoneText}>Terminer</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <KeyboardToolbar visible={isKeyboardVisible} bottomOffset={94} />
 
         <View style={styles.bottomBar}>
           <TouchableOpacity style={[styles.submitButton, !name.trim() && { opacity: 0.6 }]} onPress={handleSubmit} disabled={!name.trim()}>
@@ -414,30 +399,6 @@ const styles = StyleSheet.create({
   wheelItemText: { fontSize: FontSize.lg, color: Colors.textSecondary },
   wheelItemTextActive: { color: Colors.primary, fontWeight: FontWeight.bold },
   notesInput: { width: '100%', minHeight: 90, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(128, 0, 0, 0.1)', backgroundColor: '#FFFFFF', padding: Spacing.md, fontSize: FontSize.md, color: Colors.text },
-  keyboardToolbar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 94,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderColor: 'rgba(128, 0, 0, 0.1)',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    alignItems: 'flex-end',
-    zIndex: 20,
-  },
-  keyboardDoneButton: {
-    backgroundColor: Colors.primary + '15',
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-  },
-  keyboardDoneText: {
-    color: Colors.primary,
-    fontWeight: FontWeight.semibold,
-    fontSize: FontSize.sm,
-  },
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: Spacing.xl, backgroundColor: 'rgba(252, 248, 245, 0.95)', borderTopWidth: 1, borderTopColor: 'rgba(128, 0, 0, 0.1)' },
   submitButton: { width: '100%', height: 58, backgroundColor: Colors.primary, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
   submitButtonText: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: '#FFFFFF' },

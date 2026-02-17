@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  Keyboard,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +16,8 @@ import { useChallengeStore } from '../../src/store/challengeStore';
 import { ChallengeCard } from '../../src/components/challenges/ChallengeCard';
 import { Colors } from '../../src/constants/colors';
 import { Spacing, FontSize, FontWeight } from '../../src/constants/layout';
+import { useKeyboardToolbar } from '../../src/hooks/useKeyboardToolbar';
+import { KeyboardToolbar } from '../../src/components/ui/KeyboardToolbar';
 
 export default function ChallengesScreen() {
   const activeChallenges = useChallengeStore((s) => s.activeChallenges);
@@ -22,6 +25,7 @@ export default function ChallengesScreen() {
   const isChallengeCompleted = useChallengeStore((s) => s.isChallengeCompleted);
   const getAllChallenges = useChallengeStore((s) => s.getAllChallenges);
   const addCustomChallenge = useChallengeStore((s) => s.addCustomChallenge);
+  const { isKeyboardVisible } = useKeyboardToolbar();
 
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
@@ -126,7 +130,7 @@ export default function ChallengesScreen() {
             <Text style={styles.modalTitle}>Créer un défi</Text>
             <TextInput style={styles.input} placeholder="Nom du défi" placeholderTextColor="#999" value={name} onChangeText={setName} />
             <TextInput style={[styles.input, styles.inputMultiline]} placeholder="Détails du défi" placeholderTextColor="#999" value={description} onChangeText={setDescription} multiline numberOfLines={3} />
-            <TextInput style={styles.input} placeholder="Durée en jours" placeholderTextColor="#999" keyboardType="numeric" value={duration} onChangeText={setDuration} />
+            <TextInput style={styles.input} placeholder="Durée en jours" placeholderTextColor="#999" keyboardType="numeric" value={duration} onChangeText={setDuration} returnKeyType="done" onSubmitEditing={Keyboard.dismiss} />
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowModal(false)}>
                 <Text style={styles.cancelText}>Annuler</Text>
@@ -136,6 +140,7 @@ export default function ChallengesScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          <KeyboardToolbar visible={isKeyboardVisible} />
         </View>
       </Modal>
     </SafeAreaView>

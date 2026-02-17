@@ -1,28 +1,24 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import type { Habit } from '../types';
 
-// Configure notification handler
+// Configuration des notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
   }),
 });
 
-export interface NotificationConfig {
-  habitId: string;
-  habitName: string;
-  time: string; // HH:MM format
-  enabled: boolean;
-}
-
 /**
- * Request notification permissions
+ * Demander les permissions de notification
  */
 export async function requestNotificationPermissions(): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    return false;
+  }
+
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -32,21 +28,16 @@ export async function requestNotificationPermissions(): Promise<boolean> {
       finalStatus = status;
     }
 
-    if (finalStatus !== 'granted') {
-      return false;
-    }
-
-    // Configure channel for Android
+    // Setup Android notification channel
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('habit-reminders', {
-        name: 'Rappels d\'habitudes',
-        importance: Notifications.AndroidImportance.HIGH,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#800000',
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'HabitFlow',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        sound: 'default',
       });
     }
 
-    return true;
+    return finalStatus === 'granted';
   } catch (error) {
     console.error('Error requesting notification permissions:', error);
     return false;
@@ -54,105 +45,99 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 }
 
 /**
- * Schedule a daily notification for a habit
+ * Envoyer une notification de test
  */
-export async function scheduleHabitNotification(
-  config: NotificationConfig
-): Promise<string | null> {
+export async function sendTestNotification(habitName?: string): Promise<void> {
   try {
-    if (!config.enabled) {
-      await cancelHabitNotification(config.habitId);
-      return null;
+    const hasPermission = await requestNotificationPermissions();
+    if (!hasPermission) {
+      console.warn('Notification permissions not granted');
+      return;
     }
 
-    const [hours, minutes] = config.time.split(':').map(Number);
-    const identifier = `habit-${config.habitId}`;
+    const title = 'Test HabitFlow';
+    const body = habitName
+      ? `C'est l'heure de compléter "${habitName}" ! 🎯`
+      : `C'est l'heure de vérifier tes habitudes ! 🚀`;
 
-    // Cancel existing notification
-    await Notifications.cancelScheduledNotificationAsync(identifier);
-
-    // Schedule new notification (daily at specified time)
-    const notificationId = await Notifications.scheduleNotificationAsync({
-      identifier,
+    await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Rappel HabitFlow',
-        body: `N'oublie pas : ${config.habitName}`,
-        sound: true,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
+        title,
+        body,
+        sound: 'default',
+        badge: 1,
         data: {
-          habitId: config.habitId,
-          type: 'habit-reminder',
+          habitName: habitName || 'test',
+          type: 'habit_reminder',
         },
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-        hour: hours,
-        minute: minutes,
-        repeats: true,
-      } as Notifications.CalendarTriggerInput,
-    });
-
-    return notificationId;
-  } catch (error) {
-    console.error('Error scheduling notification:', error);
-    return null;
-  }
-}
-
-/**
- * Cancel a habit notification
- */
-export async function cancelHabitNotification(habitId: string): Promise<void> {
-  try {
-    await Notifications.cancelScheduledNotificationAsync(`habit-${habitId}`);
-  } catch (error) {
-    console.error('Error canceling notification:', error);
-  }
-}
-
-/**
- * Cancel all habit notifications
- */
-export async function cancelAllHabitNotifications(): Promise<void> {
-  try {
-    const notifications = await Notifications.getAllScheduledNotificationsAsync();
-    const habitNotifications = notifications.filter((n) =>
-      n.identifier.startsWith('habit-')
-    );
-    await Notifications.cancelAllScheduledNotificationsAsync();
-  } catch (error) {
-    console.error('Error canceling all notifications:', error);
-  }
-}
-
-/**
- * Get all scheduled notifications
- */
-export async function getScheduledNotifications(): Promise<
-  Notifications.NotificationRequest[]
-> {
-  try {
-    return await Notifications.getAllScheduledNotificationsAsync();
-  } catch (error) {
-    console.error('Error getting scheduled notifications:', error);
-    return [];
-  }
-}
-
-/**
- * Send immediate test notification
- */
-export async function sendTestNotification(): Promise<void> {
-  try {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Test HabitFlow',
-        body: 'Les notifications fonctionnent !',
-        sound: true,
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 2,
       },
-      trigger: null, // Immediate
     });
+
+    console.log('Test notification scheduled');
   } catch (error) {
     console.error('Error sending test notification:', error);
+  }
+}
+
+/**
+ * Planifier une notification quotidienne pour une habitude
+ */
+export async function scheduleHabitReminder(habit: Habit): Promise<void> {
+  if (!habit.reminder?.enabled || !habit.reminder?.time) {
+    return;
+  }
+
+  try {
+    const [hourStr, minuteStr] = habit.reminder.time.split(':');
+    const hour = parseInt(hourStr, 10);
+    const minute = parseInt(minuteStr, 10);
+
+    if (Number.isNaN(hour) || Number.isNaN(minute)) {
+      console.error('Invalid reminder time format');
+      return;
+    }
+
+    const identifier = `habit-${habit.id}`;
+
+    await Notifications.scheduleNotificationAsync({
+      identifier,
+      content: {
+        title: 'Rappel HabitFlow',
+        body: `C'est l'heure de compléter "${habit.name}" ! 🎯`,
+        sound: 'default',
+        badge: 1,
+        data: {
+          habitId: habit.id,
+          habitName: habit.name,
+          type: 'habit_reminder',
+        },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+      },
+    });
+
+    console.log(`Scheduled daily reminder for habit "${habit.name}" at ${habit.reminder.time}`);
+  } catch (error) {
+    console.error('Error scheduling habit reminder:', error);
+  }
+}
+
+/**
+ * Annuler la notification quotidienne pour une habitude
+ */
+export async function cancelHabitReminder(habitId: string): Promise<void> {
+  try {
+    const identifier = `habit-${habitId}`;
+    await Notifications.cancelScheduledNotificationAsync(identifier);
+    console.log(`Cancelled reminder for habit ${habitId}`);
+  } catch (error) {
+    console.error('Error cancelling habit reminder:', error);
   }
 }

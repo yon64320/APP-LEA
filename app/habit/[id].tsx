@@ -7,6 +7,9 @@ import {
   ScrollView,
   Alert,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +27,8 @@ import {
 import { ProgressBar } from '../../src/components/ui/ProgressBar';
 import { StatsCard } from '../../src/components/history/StatsCard';
 import { Button } from '../../src/components/ui/Button';
+import { useKeyboardToolbar } from '../../src/hooks/useKeyboardToolbar';
+import { KeyboardToolbar } from '../../src/components/ui/KeyboardToolbar';
 
 export default function HabitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,6 +38,7 @@ export default function HabitDetailScreen() {
   const toggleHabitCompletion = useHabitStore((s) => s.toggleHabitCompletion);
   const setHabitValue = useHabitStore((s) => s.setHabitValue);
   const getLogForHabitDate = useHabitStore((s) => s.getLogForHabitDate);
+  const { isKeyboardVisible } = useKeyboardToolbar();
 
   const habit = habits.find((h) => h.id === id);
   const today = getToday();
@@ -110,10 +116,14 @@ export default function HabitDetailScreen() {
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
       >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Habit info header */}
         <View style={styles.infoHeader}>
           <View
@@ -176,6 +186,11 @@ export default function HabitDetailScreen() {
                   placeholder="0"
                   placeholderTextColor={Colors.textMuted}
                   onEndEditing={handleSetValue}
+                  returnKeyType="done"
+                  onSubmitEditing={() => {
+                    handleSetValue();
+                    Keyboard.dismiss();
+                  }}
                 />
                 <Text style={styles.quantUnit}>
                   / {habit.target} {habit.unit}
@@ -244,7 +259,9 @@ export default function HabitDetailScreen() {
           style={styles.deleteButton}
           textStyle={{ color: Colors.error }}
         />
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+      <KeyboardToolbar visible={isKeyboardVisible} />
     </SafeAreaView>
   );
 }
@@ -253,6 +270,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  keyboardView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

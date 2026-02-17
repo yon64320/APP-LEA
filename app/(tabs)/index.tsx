@@ -52,15 +52,23 @@ export default function DashboardScreen() {
             <Text style={styles.appName}>HabitFlow</Text>
             <Text style={styles.greeting}>Bonjour, {userName}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.profileButton}
-            onPress={() => router.push('/settings')}
-          >
-            <View style={styles.profileIcon}>
-              <View style={styles.profileDot} />
-            </View>
-            <View style={styles.statusDot} />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => router.push('/notifications')}
+            >
+              <Ionicons name="notifications-outline" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.profileButton}
+              onPress={() => router.push('/settings')}
+            >
+              <View style={styles.profileIcon}>
+                <View style={styles.profileDot} />
+              </View>
+              <View style={styles.statusDot} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Progress */}
@@ -177,6 +185,18 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     fontWeight: FontWeight.medium,
     opacity: 0.8,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  headerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profileButton: {
     position: 'relative',
