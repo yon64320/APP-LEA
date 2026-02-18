@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '../../src/store/appStore';
 import { useHabitStore } from '../../src/store/habitStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { PRESET_HABITS, CATEGORIES } from '../../src/constants/presets';
 import { PresetHabit } from '../../src/types';
 import { Colors } from '../../src/constants/colors';
@@ -23,8 +24,21 @@ export default function HabitsScreen() {
   const selectedCategories = useAppStore((s) => s.selectedCategories);
   const setOnboardingComplete = useAppStore((s) => s.setOnboardingComplete);
   const addHabit = useHabitStore((s) => s.addHabit);
+  const session = useAuthStore((s) => s.session);
 
   const [selectedHabits, setSelectedHabits] = useState<PresetHabit[]>([]);
+
+  // Vérifier que l'utilisateur est connecté
+  useEffect(() => {
+    if (!session) {
+      router.replace('/auth/login');
+    }
+  }, [session]);
+
+  // Afficher rien si pas connecté (en attendant la redirection)
+  if (!session) {
+    return <View style={{ flex: 1, backgroundColor: Colors.background }} />;
+  }
 
   const filteredPresets = useMemo(() => {
     if (selectedCategories.length === 0) return PRESET_HABITS;

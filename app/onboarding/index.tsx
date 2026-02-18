@@ -55,10 +55,7 @@ export default function WelcomeScreen() {
           {/* Secondary Action (Ghost) */}
           <TouchableOpacity
             style={styles.loginLink}
-            onPress={() => {
-              // TODO: Implémenter la connexion
-              console.log('Login pressed');
-            }}
+            onPress={() => router.push('/auth/login')}
             activeOpacity={0.7}
           >
             <Text style={styles.loginText}>SE CONNECTER</Text>

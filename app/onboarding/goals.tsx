@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { HabitCategory } from '../../src/types';
 import { CATEGORIES } from '../../src/constants/presets';
 import { useAppStore } from '../../src/store/appStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { Colors } from '../../src/constants/colors';
 import { Spacing, FontSize, FontWeight, BorderRadius } from '../../src/constants/layout';
 
@@ -30,6 +31,19 @@ const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function GoalsScreen() {
   const [selected, setSelected] = useState<HabitCategory[]>([]);
   const setSelectedCategories = useAppStore((s) => s.setSelectedCategories);
+  const session = useAuthStore((s) => s.session);
+
+  // Vérifier que l'utilisateur est connecté
+  useEffect(() => {
+    if (!session) {
+      router.replace('/auth/login');
+    }
+  }, [session]);
+
+  // Afficher rien si pas connecté (en attendant la redirection)
+  if (!session) {
+    return <View style={{ flex: 1, backgroundColor: Colors.background }} />;
+  }
 
   const toggleCategory = (key: HabitCategory) => {
     if (Platform.OS !== 'web') {

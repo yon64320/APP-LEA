@@ -82,7 +82,7 @@ export default function ChallengeDetailScreen() {
   const handleStartChallenge = async () => {
     setIsStarting(true);
     try {
-      const habitId = addHabit({
+      const habitId = await addHabit({
         name: challenge.habitConfig.name,
         type: challenge.habitConfig.type,
         target: challenge.habitConfig.target,
@@ -93,7 +93,7 @@ export default function ChallengeDetailScreen() {
         category: challenge.category,
       });
 
-      startChallenge(challenge.id, habitId, challenge.duration);
+      await startChallenge(challenge.id, habitId, challenge.duration);
       router.back();
     } catch {
       Alert.alert('Erreur', 'Impossible de démarrer le défi');

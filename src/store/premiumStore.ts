@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PremiumPlan } from '../types';
+import * as premiumSync from '../services/sync/premiumSync';
+
+function getUserId(): string | undefined {
+  return require('./authStore').useAuthStore.getState().user?.id;
+}
 
 const FREE_HABIT_LIMIT = 5;
 const PREMIUM_STREAK_PROTECTIONS = 1; // per week
@@ -60,6 +65,13 @@ export const usePremiumStore = create<PremiumState>()(
               : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
 
         set({ plan, expiresAt, streakProtectionsUsed: 0 });
+
+        // Sync Supabase
+        const userId = getUserId();
+        const state = get();
+        if (userId) {
+          premiumSync.upsertPremium(userId, plan, expiresAt, 0, state.lastProtectionReset).catch(console.error);
+        }
       },
 
       getHabitLimit: () => {

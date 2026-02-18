@@ -3,6 +3,12 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Badge, XPEvent } from '../types';
 import { getToday } from '../utils/date';
+import * as gamificationSync from '../services/sync/gamificationSync';
+import { isOnline, queueOperation } from '../services/sync/offlineQueue';
+
+function getUserId(): string | undefined {
+  return require('./authStore').useAuthStore.getState().user?.id;
+}
 
 const XP_PER_HABIT = 10;
 const XP_PER_LEVEL = 100;
@@ -109,18 +115,42 @@ export const useGamificationStore = create<GamificationState>()(
         const currentLevel = get().level;
         const newLevel = Math.floor(currentXP / XP_PER_LEVEL) + 1;
         const leveledUp = newLevel > currentLevel;
+        const today = getToday();
 
         set((state) => ({
           xp: currentXP,
           totalXP: state.totalXP + amount,
           level: newLevel,
           xpHistory: [
-            { amount, reason, date: getToday() },
+            { amount, reason, date: today },
             ...state.xpHistory.slice(0, 99), // Keep last 100
           ],
           showLevelUpModal: leveledUp,
           lastLevelUp: leveledUp ? newLevel : state.lastLevelUp,
         }));
+
+        // Sync Supabase (avec file d'attente hors ligne)
+        const userId = getUserId();
+        if (userId) {
+          const state = get();
+          isOnline().then((online) => {
+            if (online) {
+              gamificationSync.upsertGamification(userId, state.xp, state.level, state.totalXP).catch(console.error);
+              gamificationSync.insertXPEvent(userId, { amount, reason, date: today }).catch(console.error);
+            } else {
+              queueOperation({
+                type: 'gamification',
+                action: 'update',
+                data: { xp: state.xp, level: state.level, totalXP: state.totalXP },
+              }).catch(console.error);
+              queueOperation({
+                type: 'gamification',
+                action: 'create',
+                data: { event: { amount, reason, date: today } },
+              }).catch(console.error);
+            }
+          });
+        }
       },
 
       checkAndUnlockBadge: (badgeId) => {
@@ -144,6 +174,10 @@ export const useGamificationStore = create<GamificationState>()(
         set((state) => ({
           unlockedBadges: [...state.unlockedBadges, badge],
         }));
+
+        // Sync badge vers Supabase
+        const userId = getUserId();
+        if (userId) gamificationSync.upsertBadge(userId, badge).catch(console.error);
 
         // Bonus XP for badge
         get().addXP(50, `Badge débloqué : ${definition.name}`);

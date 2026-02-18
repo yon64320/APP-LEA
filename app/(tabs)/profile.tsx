@@ -16,6 +16,7 @@ import { useGamificationStore, BADGE_DEFINITIONS } from '../../src/store/gamific
 import { usePremiumStore } from '../../src/store/premiumStore';
 import { useAppStore } from '../../src/store/appStore';
 import { useHabitStore } from '../../src/store/habitStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { XPBar } from '../../src/components/gamification/XPBar';
 import { BadgeCard } from '../../src/components/gamification/BadgeCard';
 import { Colors } from '../../src/constants/colors';
@@ -68,6 +69,8 @@ export default function ProfileScreen() {
   const userName = useAppStore((s) => s.userName);
   const setUserName = useAppStore((s) => s.setUserName);
 
+  const signOut = useAuthStore((s) => s.signOut);
+  const userEmail = useAuthStore((s) => s.user?.email ?? '');
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [draftName, setDraftName] = useState(userName);
 
@@ -134,6 +137,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <Text style={styles.userName}>{userName}</Text>
+          {userEmail ? <Text style={styles.userEmail}>{userEmail}</Text> : null}
           {isPremium && (
             <View style={styles.premiumBadge}>
               <Ionicons name="star" size={16} color={Colors.streakGold} />
@@ -238,7 +242,6 @@ export default function ProfileScreen() {
               iconColor={Colors.accent}
               label="Exporter mes données"
               onPress={() => {
-                // TODO: Export data
                 Alert.alert('Export', 'Fonctionnalité à venir');
               }}
             />
@@ -248,6 +251,37 @@ export default function ProfileScreen() {
               label="Réinitialiser l'application"
               subtitle="Action irréversible"
               onPress={handleDeleteAllData}
+            />
+          </View>
+        </View>
+
+        {/* Compte Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Compte</Text>
+          <View style={styles.settingsCard}>
+            <SettingItem
+              icon="log-out"
+              iconColor={Colors.error}
+              label="Se déconnecter"
+              subtitle={userEmail}
+              showArrow={false}
+              onPress={() => {
+                Alert.alert(
+                  'Se déconnecter',
+                  'Tu seras redirigé vers l\'écran de connexion. Tes données sont sauvegardées dans le cloud.',
+                  [
+                    { text: 'Annuler', style: 'cancel' },
+                    {
+                      text: 'Se déconnecter',
+                      style: 'destructive',
+                      onPress: async () => {
+                        await signOut();
+                        router.replace('/auth/login');
+                      },
+                    },
+                  ]
+                );
+              }}
             />
           </View>
         </View>
@@ -383,6 +417,11 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxl,
     fontWeight: FontWeight.bold,
     color: Colors.text,
+    marginBottom: 2,
+  },
+  userEmail: {
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
     marginBottom: Spacing.xs,
   },
   premiumBadge: {
